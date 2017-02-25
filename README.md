@@ -65,3 +65,14 @@ In that last gif, here's the logging info for what's happening. The first 6 queu
     - `url`: String - [Optional] the url to which you are making the request. You should pass this in if you have network requests going to different hostnames, otherwise it treats every request as if they were going to the same hostname. Browsers have different maximum open connections per hostname vs open connections in total.
     - `onSuccess`: Function - [Optional] the callback for after `task` is resolved
     - `onError`: Function - [Optional] the callback for if `task` is rejected
+
+### FAQ
+
+- Do I have to opt-in every network request through this library or can I use it for only a subset?
+  - If you omit some requests like bundles of Javascript files, it would be as if they were included with highest priority, since they are inserted into the browser queue as soon as they are called.
+
+- What if the browser is unsupported?
+  - If the maximum number of open connections is not known for the particular browser, it will bypass any request management and just dispatch immediately. You don't need to special handle it in your client code.
+
+- Is this production-ready?
+  - Not yet.
