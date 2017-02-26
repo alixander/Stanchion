@@ -28,7 +28,7 @@ describe('Tests', () => {
     });
     it('should dispatch completely', () => {
       return new Promise(testResolve => {
-        setTimeout(testResolve, 20);
+        setTimeout(testResolve, 40);
       }).then(() => {
         assert.equal(dispatchRequest.callCount, 20);
       });
