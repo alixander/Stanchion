@@ -160,7 +160,7 @@ if (process.env.NODE_ENV === 'testing') {
 
 "use strict";
 class PriorityQueue {
-  constructor(comparator, maxSize) {
+  constructor({comparator, maxSize}) {
     this.maxSize = maxSize;
     this.comparator = comparator;
     this.reset();
@@ -185,7 +185,7 @@ class PriorityQueue {
   }
 
   isEmpty() {
-    this.size === 0;
+    return this.size === 0;
   }
 
   pop() {
@@ -1281,12 +1281,17 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 
+const DEFAULT_SIZE = 100;
+
 const noop = () => {};
 
 class Stanchion {
   constructor(config = {}) {
     this.validateConfig(config);
-    this.priorityQueue = new __WEBPACK_IMPORTED_MODULE_0__priorityqueue__["a" /* default */](__WEBPACK_IMPORTED_MODULE_1__request__["a" /* default */].getRequestComparator, 100);
+    this.priorityQueue = new __WEBPACK_IMPORTED_MODULE_0__priorityqueue__["a" /* default */]({
+      comparator: __WEBPACK_IMPORTED_MODULE_1__request__["a" /* default */].getRequestComparator, 
+      maxSize: DEFAULT_SIZE
+    });
     this.inflightCount = 0;
     this.logger = config.logger || noop;
     if (process.env.NODE_ENV !== 'testing') {
@@ -1314,14 +1319,17 @@ class Stanchion {
   queue(requestConfig) {
     requestConfig.hostname = __WEBPACK_IMPORTED_MODULE_3__utils__["a" /* default */].getHostname(requestConfig.url, this.urlParser);
     const request = new __WEBPACK_IMPORTED_MODULE_1__request__["a" /* default */](requestConfig);
+
     if (!__WEBPACK_IMPORTED_MODULE_3__utils__["a" /* default */].isBrowserSupported()) {
       this.naiveDispatch(request);
       return;
     }
+
     this.logger({
       logLevel: __WEBPACK_IMPORTED_MODULE_2__constants__["a" /* default */].LogLevels.INFO,
       message: `Queuing new request with priority ${request.getPriority()}`
     });
+
     this.priorityQueue.add(request);
     this.dequeue();
   }
@@ -1340,23 +1348,34 @@ class Stanchion {
     this.priorityQueue.reset();
   }
 
+  isNetworkCongested() {
+    return this.isMaxOpenConnectionsReached();
+  }
+
+  // Try to dequeue a request to send out
   dequeue() {
-    if (this.isMaxOpenConnectionsReached()) {
+    if (this.isNetworkCongested()) {
       this.logger({
         logLevel: __WEBPACK_IMPORTED_MODULE_2__constants__["a" /* default */].LogLevels.INFO,
         message: 'Requests in queue but network congested'
       });
       return;
     }
-    const request = this.priorityQueue.pop();
-    if (!request) {
+
+    if (this.priorityQueue.isEmpty()) {
       return;
     }
+
+    const request = this.priorityQueue.pop();
     const requestHostname = request.getHostname();
     if (this.isMaxOpenConnectionsForHostnameReached(requestHostname)) {
       // If the max connection for this particular hostname is reached but less than
       // max open connections are in flight, then we repeat with the next highest priority.
       // Afterwards, we add the request back in the queue because it has not been processed yet
+      this.logger({
+        logLevel: __WEBPACK_IMPORTED_MODULE_2__constants__["a" /* default */].LogLevels.INFO,
+        message: `Attempted to dispatch request but maximum requests for hostname reached: ${requestHostname}`
+      });
       this.dequeue();
       this.priorityQueue.add(request);
       return;

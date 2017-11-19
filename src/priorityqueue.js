@@ -1,5 +1,5 @@
 class PriorityQueue {
-  constructor(comparator, maxSize) {
+  constructor({comparator, maxSize}) {
     this.maxSize = maxSize;
     this.comparator = comparator;
     this.reset();
@@ -24,7 +24,7 @@ class PriorityQueue {
   }
 
   isEmpty() {
-    this.size === 0;
+    return this.size === 0;
   }
 
   pop() {

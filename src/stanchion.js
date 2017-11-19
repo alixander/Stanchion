@@ -4,12 +4,17 @@ import Constants from './constants';
 import Utils from './utils';
 import MaxConnections from './max_connections';
 
+const DEFAULT_SIZE = 100;
+
 const noop = () => {};
 
 class Stanchion {
   constructor(config = {}) {
     this.validateConfig(config);
-    this.priorityQueue = new PriorityQueue(Request.getRequestComparator, 100);
+    this.priorityQueue = new PriorityQueue({
+      comparator: Request.getRequestComparator, 
+      maxSize: DEFAULT_SIZE
+    });
     this.inflightCount = 0;
     this.logger = config.logger || noop;
     if (process.env.NODE_ENV !== 'testing') {
@@ -37,14 +42,17 @@ class Stanchion {
   queue(requestConfig) {
     requestConfig.hostname = Utils.getHostname(requestConfig.url, this.urlParser);
     const request = new Request(requestConfig);
+
     if (!Utils.isBrowserSupported()) {
       this.naiveDispatch(request);
       return;
     }
+
     this.logger({
       logLevel: Constants.LogLevels.INFO,
       message: `Queuing new request with priority ${request.getPriority()}`
     });
+
     this.priorityQueue.add(request);
     this.dequeue();
   }
@@ -63,23 +71,34 @@ class Stanchion {
     this.priorityQueue.reset();
   }
 
+  isNetworkCongested() {
+    return this.isMaxOpenConnectionsReached();
+  }
+
+  // Try to dequeue a request to send out
   dequeue() {
-    if (this.isMaxOpenConnectionsReached()) {
+    if (this.isNetworkCongested()) {
       this.logger({
         logLevel: Constants.LogLevels.INFO,
         message: 'Requests in queue but network congested'
       });
       return;
     }
-    const request = this.priorityQueue.pop();
-    if (!request) {
+
+    if (this.priorityQueue.isEmpty()) {
       return;
     }
+
+    const request = this.priorityQueue.pop();
     const requestHostname = request.getHostname();
     if (this.isMaxOpenConnectionsForHostnameReached(requestHostname)) {
       // If the max connection for this particular hostname is reached but less than
       // max open connections are in flight, then we repeat with the next highest priority.
       // Afterwards, we add the request back in the queue because it has not been processed yet
+      this.logger({
+        logLevel: Constants.LogLevels.INFO,
+        message: `Attempted to dispatch request but maximum requests for hostname reached: ${requestHostname}`
+      });
       this.dequeue();
       this.priorityQueue.add(request);
       return;
