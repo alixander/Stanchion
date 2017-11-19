@@ -1621,7 +1621,6 @@ function displayImage(imageSrc) {
 }
 
 function main() {
-  // Change the silly name
   const network = __WEBPACK_IMPORTED_MODULE_0_stanchion__["a" /* default */].initialize({logger: console.log});
   const images = [
     'http://localhost:3000/static/images-test/1.jpg',

@@ -14,7 +14,6 @@ function displayImage(imageSrc) {
 }
 
 function main() {
-  // Change the silly name
   const network = Stanchion.initialize({logger: console.log});
   const images = [
     'http://localhost:3000/static/images-test/1.jpg',

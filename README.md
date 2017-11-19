@@ -26,7 +26,7 @@ There exists ceilings on maximum number of requests implemented by browsers [[1]
 
 This is of benefit for web apps that can make a large number of network calls at any given time. A large number is one that exceeds the maximum concurrent requests able to be made by any of the browsers your app supports.
 
-Not every network call is equal when it comes to delivering responsive user experience. For example, network requests for which UI elements wait on should take priority over calls to persist some data to the back-end, which should take priority over calls to analytics-collection. Maybe some of these calls are made periodically at intervals and some are made in response to events. Instead of managing ordering at a micro level, Stanchion takes a simple approach of assigning priorities.  
+Not every network call is equal when it comes to delivering responsive user experience. For example, network requests for which UI elements wait on should take priority over calls to persist some data to the back-end, which should take priority over calls to analytics-collection. Maybe some of these calls are made periodically at intervals and some are made in response to events. Instead of managing ordering at a micro level across independent domains in your app, Stanchion takes a simpler approach of assigning priorities.  
 
 ### Demo use case
 
@@ -74,5 +74,10 @@ In that last gif, here's the logging info for what's happening. The first 6 queu
 - What if the browser is unsupported?
   - If the maximum number of open connections is not known for the particular browser, it will bypass any request management and just dispatch immediately. You don't need to special handle it in your client code.
 
-- Is this production-ready?
-  - Not yet.
+- Are there examples?
+  - Yes, please take a look at `test/api-test` and `test/images-test`.
+
+### Development
+
+- To test
+  - `npm test`
